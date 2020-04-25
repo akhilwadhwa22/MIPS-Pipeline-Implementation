@@ -1,4 +1,5 @@
 
+
 /*Akhil Wadhwa
    AW3509
    Final Code- LAB1
@@ -15,17 +16,17 @@
 using namespace std;
 #define MemSize 1000 // memory size, in reality, the memory size should be 2^32, but for this lab, for the space resaon, we keep it as this large number, but the memory is still 32-bit addressable.
 
-struct IFStruct {
+struct IFStruct { // Instruction Fetch Stage
     bitset<32>  PC;
     bool        nop;
 };
 
-struct IDStruct {
+struct IDStruct { //Instruction Decode Stage
     bitset<32>  Instr;
     bool        nop;
 };
 
-struct EXStruct {
+struct EXStruct {  //Execute Stage
     bitset<32>  Read_data1;
     bitset<32>  Read_data2;
     bitset<16>  Imm;//
@@ -40,7 +41,7 @@ struct EXStruct {
     bool        nop;
 };
 
-struct MEMStruct {
+struct MEMStruct { // Memory Stage
     bitset<32>  ALUresult;
     bitset<32>  Store_data;
     bitset<5>   Rs;
@@ -52,7 +53,7 @@ struct MEMStruct {
     bool        nop;
 };
 
-struct WBStruct {
+struct WBStruct { //Write back stage
     bitset<32>  Wrt_data;
     bitset<5>   Rs;
     bitset<5>   Rt;
@@ -61,7 +62,7 @@ struct WBStruct {
     bool        nop;
 };
 
-struct stateStruct {
+struct stateStruct { //A structure than has all the 5 stages
     IFStruct    IF;
     IDStruct    ID;
     EXStruct    EX;
@@ -73,91 +74,81 @@ class RF
 {
     public:
         bitset<32> Reg_data;
-     	RF()
-    	{
-			Registers.resize(32);
+     	RF(){                             //Constructor
+ 			Registers.resize(32);
 			Registers[0] = bitset<32> (0);
         }
 
-        bitset<32> readRF(bitset<5> Reg_addr)
-        {
+        bitset<32> readRF(bitset<5> Reg_addr){ //Read the Register File
             Reg_data = Registers[Reg_addr.to_ulong()];
             return Reg_data;
         }
 
-        void writeRF(bitset<5> Reg_addr, bitset<32> Wrt_reg_data)
-        {
+        void writeRF(bitset<5> Reg_addr, bitset<32> Wrt_reg_data){ //Write to the Register File
             Registers[Reg_addr.to_ulong()] = Wrt_reg_data;
         }
 
-		void outputRF()
-		{
-			ofstream rfout;
-			rfout.open("RFresult.txt",std::ios_base::app);
-			if (rfout.is_open())
-			{
+		void outputRF(){ //Ofstream->Output stream class to operate on files
+			ofstream rfout;  //object for the ofstream class->rfout
+			rfout.open("RFresult.txt",std::ios_base::app); //Create/Overwrite the file
+			if (rfout.is_open()){ //If the file is open
 				rfout<<"State of RF:\t"<<endl;
-				for (int j = 0; j<32; j++)
-				{
-					rfout << Registers[j]<<endl;
-				}
-			}
+				for (int j = 0; j<32; j++){ 
+					rfout << Registers[j]<<endl; //Print the contents of the 32 Registers in the file
+				    }
+                }
 			else cout<<"Unable to open file";
-			rfout.close();
-		}
+			rfout.close(); //close the file
+            }
 
 	private:
-		vector<bitset<32> >Registers;
+		vector<bitset<32> >Registers; //Register is made as a private member of the class-> so that no one has direct access to the registers.
 };
 
-class INSMem
-{
+class INSMem{
 	public:
 
-        bitset<32> Instruction;
-        INSMem()
-        {
-
-			IMem.resize(MemSize);
-            ifstream imem;
-			string line;
+        bitset<32> Instruction; //Instructions are public.
+        INSMem(){ // Constructor for instrcution Memory
+			IMem.resize(MemSize); // Resize the instruction Memory to have 1000 locations of 8 bits each.
+            ifstream imem; //Make an object of the "Input File stream" class "ifstream"
+			string line; // define a string 
 			int i = 0;
-			imem.open("imem.txt");
-			if (imem.is_open()){
-                    while (getline(imem,line))
-                    {
-                        if(line.length()>8)
-                            line=line.erase(8);
-                        IMem[i] = bitset<8>(line);
+			imem.open("imem.txt"); //open the Imem File
+			if (imem.is_open()){ //If File is open 
+                    while (getline(imem,line)){ //Get a line from the file
+                        if(line.length()>8) //If the line is more than 8 characters
+                            line=line.erase(8); //Erase the caracters
+                        IMem[i] = bitset<8>(line); //Take the 8 bits and stor it line by line in the instruction memory
                         i++;
+                        }
                     }
-			    }
 			else cout<<"Unable to open file";
-			imem.close();
-        }
+			imem.close(); //Close the opened File
+            }
 
-		bitset<32> readInstr(bitset<32> ReadAddress)
-		{
-			string insmem;
+		bitset<32> readInstr(bitset<32> ReadAddress) { //Function to read the instruction memory //ReadAddress=> current PC
+			string insmem; //declare a string
 			insmem.append(IMem[ReadAddress.to_ulong()].to_string());
 			insmem.append(IMem[ReadAddress.to_ulong()+1].to_string());
 			insmem.append(IMem[ReadAddress.to_ulong()+2].to_string());
-			insmem.append(IMem[ReadAddress.to_ulong()+3].to_string());
+			insmem.append(IMem[ReadAddress.to_ulong()+3].to_string()); 
+                                                                        //Take the 4 consecutive PC loactions and form a single instruction of 32 bits.
 			Instruction = bitset<32>(insmem);		//read instruction memory
-			return Instruction;
+			return Instruction; //Return the 32 bit-instruction
 		}
 
     private:
-        vector<bitset<8> > IMem;
+        vector<bitset<8> > IMem; //Define a vector of a bitset containing 8 bits.
+        //Instruction Memory is a private variable to the Instruction Memory class.
 };
 
-class DataMem
-{
-    public:
+class DataMem{
+    public:                     // All the implementations are same to the Instruction Memory 
         bitset<32> ReadData;
         DataMem(){
 
-            DMem.resize(MemSize);
+            DMem.resize(MemSize); //Declare the data Memory of 1000 locations with 8 bits in each location
             ifstream dmem;
             string line;
             int i=0;
@@ -179,7 +170,6 @@ class DataMem
         }
 
         bitset<32> readDataMem(bitset<32> Address){
-
 			string datamem;
             datamem.append(DMem[Address.to_ulong()].to_string());
             datamem.append(DMem[Address.to_ulong()+1].to_string());
@@ -189,35 +179,31 @@ class DataMem
             return ReadData;
             }
 
-        void writeDataMem(bitset<32> Address, bitset<32> WriteData){
-
+        void writeDataMem(bitset<32> Address, bitset<32> WriteData){ //Write the data to the memory-> 8 bits in 1 location. 4 times at a time.
             DMem[Address.to_ulong()] = bitset<8>(WriteData.to_string().substr(0,8));
             DMem[Address.to_ulong()+1] = bitset<8>(WriteData.to_string().substr(8,8));
             DMem[Address.to_ulong()+2] = bitset<8>(WriteData.to_string().substr(16,8));
             DMem[Address.to_ulong()+3] = bitset<8>(WriteData.to_string().substr(24,8));
             }
 
-        void outputDataMem(){
-
+        void outputDataMem(){ //Save the data memory in a file
             ofstream dmemout;
             dmemout.open("dmemresult.txt");
-            if (dmemout.is_open())
-            {
-                for (int j = 0; j< 1000; j++)
-                {
+            if (dmemout.is_open()){
+                for (int j = 0; j< 1000; j++){ //Write all the 1000 location on the file.
                     dmemout << DMem[j]<<endl;
-                }
-
+                    }
+                }   
+            else 
+                cout<<"Unable to open file";
+            dmemout.close(); //Close the File
             }
-            else cout<<"Unable to open file";
-            dmemout.close();
-        }
 
     private:
-		vector<bitset<8> > DMem;
+		vector<bitset<8> > DMem; //Define a private member-> a vector of 8 bits
 };
 
-void printState(stateStruct state, int cycle){
+void printState(stateStruct state, int cycle){ //Prints the Values of the variables in different stages in a file
 
     ofstream printstate;
     printstate.open("stateresult.txt", std::ios_base::app);
@@ -265,14 +251,14 @@ void printState(stateStruct state, int cycle){
     printstate.close();
 }
 
-unsigned long shiftbits(bitset<32> inst, int start){ //First Parameter--> 32 bit value   |||||| Second parameter--> an integer specifying the no. of times you want to shift.
+unsigned long shiftbits(bitset<32> inst, int start){ //First Parameter--> 32 bit value/ Second parameter--> an integer specifying the no. of times you want to shift.
 
     unsigned long ulonginst;
     return ((inst.to_ulong())>>start);   //shifts the variable passed in as the first parameter to the right from the "start" bit.|| RETURNS the shifted value
 
 }
 
-bitset<32> signextend (bitset<16> Imm){
+bitset<32> signextend (bitset<16> Imm){//Extends the 16 bits value to 32 bits
     string sestring;
     if (Imm[15]==0){
         sestring = "0000000000000000"+Imm.to_string<char,std::string::traits_type,std::string::allocator_type>();
@@ -284,7 +270,7 @@ bitset<32> signextend (bitset<16> Imm){
 
 }
 
-bitset<32> BranchAddr (bitset<16> Immi){
+bitset<32> BranchAddr (bitset<16> Immi){ //Make a 32 bit branch address using 16 bits
     string Addr;
     if (Immi[15]==0){
         Addr = "00000000000000"+Immi.to_string<char,std::string::traits_type,std::string::allocator_type>()+"00";
@@ -315,7 +301,7 @@ int main(){
     int branch=0;
     //int b=2;
 
-    stateStruct state, newState;//stateStruct objects
+    stateStruct state, newState;//stateStruct objects 
 
     state.IF.nop=0;
     newState.IF.nop=0;
@@ -511,4 +497,4 @@ int main(){
         myRF.outputRF(); // dump RF;
         myDataMem.outputDataMem(); // dump data mem
         return 0;
-}
+    }
